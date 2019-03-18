@@ -45,49 +45,55 @@ HAVING COUNT(last_name) >= 2
 ORDER BY COUNT(last_name) DESC;
 
 /* 4c. The actor `HARPO WILLIAMS` was accidentally entered in the `actor` table as `GROUCHO WILLIAMS`. Write a query to fix the record. */
+SELECT * FROM actor WHERE concat(first_name, " ", last_name)='GROUCHO WILLIAMS';
+
 UPDATE actor 
 SET first_name='HARPO'
 WHERE concat(first_name, " ", last_name)='GROUCHO WILLIAMS';
+
+SELECT * FROM actor WHERE actor_id=172;
 
 /* 4d. Perhaps we were too hasty in changing `GROUCHO` to `HARPO`. 
 It turns out that `GROUCHO` was the correct name after all! 
 In a single query, if the first name of the actor is currently `HARPO`, change it to `GROUCHO`. */
 UPDATE actor 
 SET first_name='GROUCHO'
-WHERE first_name='HARPO';
+WHERE concat(first_name, " ", last_name)='HARPO WILLIAMS';
 
-/* 5a. You cannot locate the schema of the `address` table. Which query would you use to re-create it? */
-DESCRIBE address;
+SELECT * FROM actor WHERE actor_id=172;
 
-
-
-
-
-
+/* 5a. You cannot locate the schema of the `address` table. Which query would you use to re-create it?
+	- Hint: https://dev.mysql.com/doc/refman/5.7/en/show-create-table.html */
+SHOW CREATE TABLE address;
 
 /* 6a. Use `JOIN` to display the first and last names, as well as the address, of each staff member. Use the tables `staff` and `address`: */
-SELECT first_name, last_name, address FROM staff 
+SELECT first_name, last_name, address, address2, city, district, postal_code, country FROM staff 
 INNER JOIN address
-ON staff.address_id=address.address_id;
+ON staff.address_id=address.address_id
+INNER JOIN city
+ON address.city_id=city.city_id
+INNER JOIN country
+ON city.country_id=country.country_id;
 
 /* 6b. Use `JOIN` to display the total amount rung up by each staff member in August of 2005. Use tables `staff` and `payment`. */
-SELECT first_name, last_name, SUM(amount) AS 'Total Amount' FROM staff 
-INNER JOIN payment 
+SELECT first_name, last_name, SUM(amount) AS 'Total Amount' FROM payment 
+INNER JOIN staff 
 ON staff.staff_id=payment.staff_id
+WHERE month(payment_date) = 8 AND year(payment_date)=2005
 GROUP BY payment.staff_id;
+
 
 /* 6c. List each film and the number of actors who are listed for that film. Use tables `film_actor` and `film`. Use inner join. */
 SELECT film_actor.film_id, title, COUNT(actor_id) AS 'No of Actors' FROM film_actor 
 INNER JOIN film 
 ON film_actor.film_id=film.film_id 
-GROUP BY film_id
-ORDER by film_id;
+GROUP BY film_actor.film_id;
 
 /* 6d. How many copies of the film `Hunchback Impossible` exist in the inventory system? */
 SELECT film.film_id, title, COUNT(inventory_id) AS 'No of Copies' FROM inventory 
 INNER JOIN film
 ON inventory.film_id=film.film_id 
-WHERE film.title='Hunchback Impossible';
+WHERE title='Hunchback Impossible';
 
 /* 6e. Using the tables `payment` and `customer` and the `JOIN` command, list the total paid by each customer. List the customers alphabetically by last name: */
 SELECT first_name, last_name, SUM(amount) AS 'Total Paid' FROM customer 
@@ -125,7 +131,7 @@ ON city.country_id=country.country_id
 WHERE country='Canada';
 
 /* 7d. Sales have been lagging among young families, and you wish to target all family movies for a promotion. Identify all movies categorized as _family_ films. */
-SELECT film.film_id, title, name FROM film 
+SELECT film.film_id, title, name AS 'Category' FROM film 
 INNER JOIN film_category 
 ON film.film_id = film_category.film_id 
 INNER JOIN category 
@@ -142,7 +148,7 @@ GROUP BY film.film_id
 ORDER BY COUNT(rental_id) DESC;
 
 /* 7f. Write a query to display how much business, in dollars, each store brought in. */
-SELECT store_id, rental.inventory_id, payment.rental_id, SUM(amount) FROM payment
+SELECT store_id, SUM(amount) AS 'Total Business ($)' FROM payment
 INNER JOIN rental
 ON payment.rental_id=rental.rental_id
 INNER JOIN inventory
@@ -158,7 +164,8 @@ ON address.city_id=city.city_id
 INNER JOIN country
 ON city.country_id=country.country_id;
 
-/* 7h. List the top five genres in gross revenue in descending order. (**Hint**: you may need to use the following tables: category, film_category, inventory, payment, and rental.) */
+/* 7h. List the top five genres in gross revenue in descending order. 
+(**Hint**: you may need to use the following tables: category, film_category, inventory, payment, and rental.) */
 SELECT name, sum(amount) AS 'Total Amount' FROM payment
 INNER JOIN rental
 ON payment.rental_id=rental.rental_id
@@ -193,13 +200,3 @@ SELECT * FROM topgenres;
 
 /* 8c. You find that you no longer need the view `top_five_genres`. Write a query to delete it. */
 DROP VIEW topgenres;
-
-/* 
-## Uploading Homework
-
-* To submit this homework using BootCampSpot:
-
-  * Create a GitHub repository.
-  * Upload your .sql file with the completed queries.
-  * Submit a link to your GitHub repo through BootCampSpot.
- */
